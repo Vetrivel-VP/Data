@@ -1,0 +1,61 @@
+drop database complex cascade;
+
+hive
+
+create database complex;
+use complex;
+
+ARRAY:
+
+$ cat >arrayfile
+1,abc,40000,a$b$c,hyd
+2,def,3000,d$f,bang
+
+
+create table samplearray(id int,name string,sal bigint,sub array<string>,city string) row format delimited fields terminated by ',' collection items terminated by '$';
+
+load data local inpath '/home/hduser/arrayfile' overwrite into table samplearray;
+
+
+select * from samplearray;
+
+select * from samplearray where id=1;
+
+select id, name, sal, sub[2] from sampearray;
+  
+MAP:
+
+$ cat >mapfile
+1,abc,40000,a$b$c,pf#500$epf#200,hyd
+2,def,3000,d$f,pf#500,bang
+
+create table samplemap(id int,name string,sal bigint,sub array<string>,dud map<string,int>,city string)
+row format delimited 
+fields terminated by ','
+collection items terminated by '$'
+map keys terminated by '#';
+
+load data local inpath '/home/hduser/mapfile' overwrite into table samplemap;
+
+hive>select * from samplemap;
+
+hive>select dud["pf"] from samplemap; 
+
+hive>select dud["pf"],dud["epf"] from sample; 
+
+STRUCT:
+
+cat >structfile
+1,abc,40000,a$b$c,pf#500$epf#200,hyd$ap$500001
+2,def,3000,d$f,pf#500,bang$kar$600038
+
+create table tab11(id int,name string,sal bigint,sub array<string>,dud map<string,int>,addr struct<city:string,state:string,pin:bigint>)
+row format delimited 
+fields terminated by ','
+collection items terminated by '$'
+map keys terminated by '#';
+
+load data local inpath '/home/hduser/structfile' into table tab11;
+
+hive>select addr.city from tab11;
+
