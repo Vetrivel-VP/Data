@@ -1,0 +1,13 @@
+This is a new class for hadoop. 
+We are learning HDFS and Mapreduce. 
+there are total ten modules.
+we are currently learning pig
+next lession is hive
+we are learning yarn
+we are learning java in mapreduce
+we are learning pig
+we are learning hbase
+PIG, Pig pig, pig
+'pig' 'hive'
+hadoop is using big data......
+Hadoop is use for analyse data.

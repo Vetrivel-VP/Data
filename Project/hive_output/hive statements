@@ -1,0 +1,71 @@
+create table h1bvisa(sno INT, status STRING, empoyer_name STRING, sco_name STRING, job_title STRING, time_postition STRING, wage INT, year STRING, worksite STRING, longitude double, latitude double)
+ROW FORMAT SERDE'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+WITH SERDEPROPERTIES(
+"speratorChar" =",",
+"quoteChar" ="\"" 
+)
+STORED AS TEXTFILE;
+
+create table h1bvisa_table1(sno INT, status STRING, empoyer_name STRING, sco_name STRING, job_title STRING, time_postition STRING, wage INT, year STRING, worksite STRING, longitude double, latitude double)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE;
+
+INSERT OVERWRITE TABLE h1bvisa_table1 SELECT regexp_replace(sno, "\t", ""), regexp_replace(status, "\t", ""), regexp_replace(empoyer_name, "\t", ""), regexp_replace(sco_name, "\t", ""), regexp_replace(job_title, "\t", ""), regexp_replace(time_postition, "\t", ""), regexp_replace(wage, "\t", ""), regexp_replace(year, "\t", ""), regexp_replace(worksite, "\t", ""), regexp_replace(longitude, "\t", ""), regexp_replace(latitude, "\t", "") FROM h1bvisa WHERE status != "NA";
+
+CREATE TABLE h1bvisa_final (sno INT, status STRING, empoyer_name STRING, sco_name STRING, job_title STRING, time_postition STRING, wage INT, year STRING, worksite STRING, longitude double, latitude double)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+STORED AS TEXTFILE;
+
+INSERT OVERWRITE TABLE h1bvisa_final SELECT sno, case WHEN TRIM(status) = "PENDING QUALITY AND COMPLIANCE REVIEW - UNASSIGNED" THEN "DENIED"
+WHEN TRIM(status)= "REJECTED" THEN "DENIED"
+WHEN TRIM(status)= "INVALIDATED" THEN "DENIED"
+else status end,
+empoyer_name, sco_name, job_title, time_postition, wage, year, worksite, longitude, latitude
+FROM h1bvisa_table1;
+
+LOAD DATA LOCAL INPATH '/home/vetri/Downloads/PIG/Project/h1b.csv' OVERWRITE INTO TABLE h1bvisa;
+
+1. 
+
+	a. Is the number of petitions with Data Engineer job title increasing over time?
+
+		select year,job_title,count(year) from h1bvisa_final where job_title LIKE '%DATA ENGINEER%' group by year,job_title; 
+
+	b. Find top 5 job titles who are having highest avg growth in applications.
+
+		select job_title,year,count(year) as cnt from h1bvisa_final group by job_title, year order by cnt desc limit 5;
+
+2.
+
+	a) Which part of the US has the most Data Engineer jobs for each year?
+
+		select split(worksite,'[,]')[1] , count(split(worksite,'[,]')[1]) as cnt from h1bvisa_final where job_title LIKE '%DATA ENGINEER%' group by split(worksite,'[,]')[1] order by cnt desc;
+
+	b) find top 5 locations in the US who have got certified visa for each year.
+
+		select split(worksite,'[,]')[1] , count(split(worksite,'[,]')[1]) as cnt,year from h1bvisa_final where year = '2011' and status LIKE '%CERTIFIED%' group by split(worksite,'[,]')[1],year order by cnt desc limit 5;
+
+
+3 . Which industry(SOC_NAME) has the most number of Data Scientist positions?
+
+	select sco_name, count(sco_name) as cnt from h1bvisa_final where job_title LIKE '%DATA SCIENTIST%' group by sco_name order by cnt desc;
+
+
+4. Which top 5 employers file the most petitions each year? - Case Status - ALL
+
+	select empoyer_name, year, count(year) as cnt from h1bvisa_final group by empoyer_name,year order by cnt desc limit 5;
+
+SAVING THE OUPUT INTO LOCAL FILE
+
+
+INSERT OVERWRITE DIRECTORY '/hive/input' row format delimited fields terminated by ',' 
+select * from h1bvisa;
+
+
+
+select empoyer_name,(count(status= 'CERTIFIED') + count(status= 'CERTIFIED-WITHDRAWN'))  from h1bvisa group by empoyer_name limit 20;
+
+
+select empoyer_name,count(status) as cnt from h1bvisa group by empoyer_name having ((count(status= 'CERTIFIED') + count(status= 'CERTIFIED-WITHDRAWN'))/3000000)*100 > 70;
